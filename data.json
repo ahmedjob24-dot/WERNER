@@ -1,1 +1,38 @@
+// /api/data.js
+
+const fs = require('fs');
+const path = require('path');
+
+const dataFilePath = path.join(__dirname, '../data.json');
+
+// Utility function to read data from a JSON file
+function readDataFromFile() {
+    if (fs.existsSync(dataFilePath)) {
+        const rawData = fs.readFileSync(dataFilePath);
+        return JSON.parse(rawData);
+    }
+    return [];
+}
+
+// Utility function to save data to the JSON file
+function saveDataToFile(data) {
+    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
+}
+
+module.exports = async (req, res) => {
+    if (req.method === 'GET') {
+        // Return the stored data
+        const data = readDataFromFile();
+        res.status(200).json(data);
+    } else if (req.method === 'POST') {
+        // Add new data
+        const newData = req.body;
+        const data = readDataFromFile();
+        data.push(newData);
+        saveDataToFile(data);
+        res.status(201).json(newData);
+    } else {
+        res.status(405).send('Method Not Allowed');
+    }
+};
 
