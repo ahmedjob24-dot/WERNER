@@ -1,135 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Machine Data Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maschinen- & Materialverwaltung</title>
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      background: #f0f2f5;
+    }
+    .card {
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .table thead {
+      background-color: #0d6efd;
+      color: white;
+    }
+    .btn-custom {
+      background-color: #0d6efd;
+      color: white;
+      transition: all 0.3s ease;
+    }
+    .btn-custom:hover {
+      background-color: #0b5ed7;
+    }
+
+    /* --- PRINT RULES --- */
+    @media print {
+      /* hide everything except print area */
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      /* hide buttons, forms, and the top card */
+      .btn, form, .card:first-child {
+        display: none !important;
+      }
+      /* hide Aktionen column completely */
+      th:nth-last-child(1),
+      td:nth-last-child(1) {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="container py-5">
+    <div class="text-center mb-4">
+      <h1 class="fw-bold text-primary">🏭 Maschinen- & Material-Tracker</h1>
+      <p class="text-muted">Verwalte Maschinen, Standorte, Materialien, Stückzahl und Infos.</p>
+    </div>
 
-<div class="container mt-5">
-    <h1>Machine Data Management</h1>
-
-    <!-- Form for adding/updating data -->
-    <form id="dataForm" class="mb-4">
-        <div class="row">
-            <div class="col">
-                <input type="text" id="mashine" class="form-control" placeholder="Mashine" required>
-            </div>
-            <div class="col">
-                <input type="text" id="standort" class="form-control" placeholder="Standort" required>
-            </div>
-            <div class="col">
-                <input type="text" id="materialien" class="form-control" placeholder="Materialien" required>
-            </div>
-            <div class="col">
-                <input type="number" id="stucke" class="form-control" placeholder="Stücke" required>
-            </div>
-            <div class="col">
-                <input type="text" id="info" class="form-control" placeholder="Info">
-            </div>
+    <!-- Formular -->
+    <div class="card p-4 mb-5">
+      <h4 class="mb-3 text-secondary">Neue Maschine hinzufügen</h4>
+      <form id="machineForm">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Maschinenname</label>
+            <input type="text" id="machineName" class="form-control" placeholder="z. B. CNC-Drehmaschine" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Standort</label>
+            <input type="text" id="machineLocation" class="form-control" placeholder="z. B. Werkstatt 2" required />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Materialien</label>
+            <input type="text" id="machineMaterials" class="form-control" placeholder="z. B. Stahl, Aluminium" required />
+          </div>
+          <div class="col-md-1">
+            <label class="form-label">Stücke</label>
+            <input type="number" id="machineCount" class="form-control" min="1" value="1" required />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Info</label>
+            <input type="text" id="machineInfo" class="form-control" placeholder="z. B. Wartung nötig" />
+          </div>
         </div>
-        <button type="submit" id="addButton" class="btn btn-primary mt-3">Add Data</button>
-    </form>
+        <div class="text-end mt-3">
+          <button type="submit" class="btn btn-custom px-4">Maschine speichern</button>
+        </div>
+      </form>
+    </div>
 
-    <!-- Table to display data -->
-    <table class="table table-striped">
-        <thead>
+    <!-- Suchleiste & Druckbutton -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <input type="text" id="searchInput" class="form-control w-50" placeholder="🔍 Suche nach Maschine, Standort oder Material..." />
+      <button class="btn btn-outline-secondary" onclick="window.print()">🖨️ Drucken</button>
+    </div>
+
+    <!-- Tabelle -->
+    <div class="card p-4" id="printArea">
+      <h4 class="text-secondary mb-3">Maschinenliste</h4>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead>
             <tr>
-                <th>ID</th>
-                <th>Mashine</th>
-                <th>Standort</th>
-                <th>Materialien</th>
-                <th>Stücke</th>
-                <th>Info</th>
-                <th>Actions</th>
+              <th>#</th>
+              <th>Maschine</th>
+              <th>Standort</th>
+              <th>Materialien</th>
+              <th>Stücke</th>
+              <th>Info</th>
+              <th>Aktionen</th>
             </tr>
-        </thead>
-        <tbody id="dataTableBody">
-            <!-- Dynamic data rows go here -->
-        </tbody>
-    </table>
-</div>
+          </thead>
+          <tbody id="machineTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-<script>
-    const apiUrl = 'http://localhost:3000/data';
+  <!-- Modal zum Bearbeiten -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Maschine bearbeiten</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm">
+            <input type="hidden" id="editIndex" />
+            <div class="mb-3">
+              <label class="form-label">Maschinenname</label>
+              <input type="text" id="editName" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Standort</label>
+              <input type="text" id="editLocation" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Materialien</label>
+              <input type="text" id="editMaterials" class="form-control" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Stücke</label>
+              <input type="number" id="editCount" class="form-control" min="1" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Info</label>
+              <input type="text" id="editInfo" class="form-control" />
+            </div>
+            <div class="text-end">
+              <button type="submit" class="btn btn-custom">Speichern</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    // Fetch existing data from the backend and render it
-    function fetchData() {
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => renderData(data))
-            .catch(error => console.error('Error fetching data:', error));
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const machineForm = document.getElementById("machineForm");
+    const machineTable = document.getElementById("machineTable");
+    const searchInput = document.getElementById("searchInput");
+
+    let machines = JSON.parse(localStorage.getItem("machines")) || [];
+
+    function renderTable(filter = "") {
+      machineTable.innerHTML = "";
+      const filtered = machines.filter(m =>
+        (m.name + m.location + m.materials.join(", ") + m.info)
+          .toLowerCase()
+          .includes(filter.toLowerCase())
+      );
+
+      filtered.forEach((m, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${m.name}</td>
+          <td>${m.location}</td>
+          <td>${m.materials.join(", ")}</td>
+          <td>${m.count}</td>
+          <td>${m.info || "-"}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-2" onclick="openEditModal(${index})">Bearbeiten</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteMachine(${index})">Löschen</button>
+          </td>
+        `;
+        machineTable.appendChild(tr);
+      });
     }
 
-    // Render data in the table
-    function renderData(data) {
-        const tbody = document.getElementById('dataTableBody');
-        tbody.innerHTML = ''; // Clear table before re-rendering
-
-        data.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.id}</td>
-                <td>${item.mashine}</td>
-                <td>${item.standort}</td>
-                <td>${item.materialien}</td>
-                <td>${item.stucke}</td>
-                <td>${item.info}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" onclick="editData('${item.id}')">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteData('${item.id}')">Delete</button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
+    function saveToLocalStorage() {
+      localStorage.setItem("machines", JSON.stringify(machines));
     }
 
-    // Add new data
-    document.getElementById('dataForm').addEventListener('submit', function(event) {
-        event.preventDefault();
+    machineForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const name = document.getElementById("machineName").value.trim();
+      const location = document.getElementById("machineLocation").value.trim();
+      const materials = document.getElementById("machineMaterials").value.split(",").map(m => m.trim()).filter(Boolean);
+      const count = parseInt(document.getElementById("machineCount").value);
+      const info = document.getElementById("machineInfo").value.trim();
 
-        const newData = {
-            mashine: document.getElementById('mashine').value,
-            standort: document.getElementById('standort').value,
-            materialien: document.getElementById('materialien').value,
-            stucke: document.getElementById('stucke').value,
-            info: document.getElementById('info').value
-        };
-
-        fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            fetchData(); // Refresh the data in the table
-            document.getElementById('dataForm').reset(); // Reset the form
-        })
-        .catch(error => console.error('Error adding data:', error));
+      machines.push({ name, location, materials, count, info });
+      saveToLocalStorage();
+      renderTable();
+      machineForm.reset();
     });
 
-    // Edit data (you would handle this similarly by sending a PUT request)
-    function editData(id) {
-        // Fill the form with existing data (you can send a PUT request to update)
-        alert('Edit functionality here!');
+    function deleteMachine(index) {
+      if (confirm("Diesen Eintrag wirklich löschen?")) {
+        machines.splice(index, 1);
+        saveToLocalStorage();
+        renderTable();
+      }
     }
 
-    // Delete data
-    function deleteData(id) {
-        fetch(`${apiUrl}/${id}`, {
-            method: 'DELETE',
-        })
-        .then(() => fetchData()) // Refresh the data in the table
-        .catch(error => console.error('Error deleting data:', error));
+    function openEditModal(index) {
+      const m = machines[index];
+      document.getElementById("editIndex").value = index;
+      document.getElementById("editName").value = m.name;
+      document.getElementById("editLocation").value = m.location;
+      document.getElementById("editMaterials").value = m.materials.join(", ");
+      document.getElementById("editCount").value = m.count;
+      document.getElementById("editInfo").value = m.info;
+
+      const modal = new bootstrap.Modal(document.getElementById("editModal"));
+      modal.show();
     }
 
-    // Initial data fetch
-    fetchData();
-</script>
+    document.getElementById("editForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const index = document.getElementById("editIndex").value;
+      machines[index] = {
+        name: document.getElementById("editName").value.trim(),
+        location: document.getElementById("editLocation").value.trim(),
+        materials: document.getElementById("editMaterials").value.split(",").map(m => m.trim()).filter(Boolean),
+        count: parseInt(document.getElementById("editCount").value),
+        info: document.getElementById("editInfo").value.trim()
+      };
+      saveToLocalStorage();
+      renderTable();
+      bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
+    });
 
+    searchInput.addEventListener("input", (e) => renderTable(e.target.value));
+
+    renderTable();
+  </script>
 </body>
 </html>
