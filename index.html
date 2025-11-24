@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Machine Data Management</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </head>
@@ -12,13 +11,10 @@
 
 <div class="container mt-5">
     <h1>Machine Data Management</h1>
-    
+
     <!-- Form for adding/updating data -->
     <form id="dataForm" class="mb-4">
         <div class="row">
-            <div class="col">
-                <input type="text" id="id" class="form-control" placeholder="ID" required>
-            </div>
             <div class="col">
                 <input type="text" id="mashine" class="form-control" placeholder="Mashine" required>
             </div>
@@ -58,15 +54,22 @@
 </div>
 
 <script>
-    // Sample storage (replace this with actual file handling in a backend)
-    let dataStore = [];
+    const apiUrl = 'http://localhost:3000/data';
 
-    // Function to render the data
-    function renderData() {
+    // Fetch existing data from the backend and render it
+    function fetchData() {
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => renderData(data))
+            .catch(error => console.error('Error fetching data:', error));
+    }
+
+    // Render data in the table
+    function renderData(data) {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = ''; // Clear table before re-rendering
 
-        dataStore.forEach((item, index) => {
+        data.forEach(item => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${item.id}</td>
@@ -76,76 +79,56 @@
                 <td>${item.stucke}</td>
                 <td>${item.info}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="editData(${index})">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteData(${index})">Delete</button>
+                    <button class="btn btn-warning btn-sm" onclick="editData('${item.id}')">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteData('${item.id}')">Delete</button>
                 </td>
             `;
             tbody.appendChild(row);
         });
     }
 
-    // Function to handle add/edit form submission
+    // Add new data
     document.getElementById('dataForm').addEventListener('submit', function(event) {
         event.preventDefault();
 
-        const id = document.getElementById('id').value;
-        const mashine = document.getElementById('mashine').value;
-        const standort = document.getElementById('standort').value;
-        const materialien = document.getElementById('materialien').value;
-        const stucke = document.getElementById('stucke').value;
-        const info = document.getElementById('info').value;
+        const newData = {
+            mashine: document.getElementById('mashine').value,
+            standort: document.getElementById('standort').value,
+            materialien: document.getElementById('materialien').value,
+            stucke: document.getElementById('stucke').value,
+            info: document.getElementById('info').value
+        };
 
-        const newData = { id, mashine, standort, materialien, stucke, info };
-        dataStore.push(newData);
-
-        renderData();  // Update the table
-
-        // Clear form
-        document.getElementById('dataForm').reset();
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            fetchData(); // Refresh the data in the table
+            document.getElementById('dataForm').reset(); // Reset the form
+        })
+        .catch(error => console.error('Error adding data:', error));
     });
 
-    // Edit data
-    function editData(index) {
-        const item = dataStore[index];
-        document.getElementById('id').value = item.id;
-        document.getElementById('mashine').value = item.mashine;
-        document.getElementById('standort').value = item.standort;
-        document.getElementById('materialien').value = item.materialien;
-        document.getElementById('stucke').value = item.stucke;
-        document.getElementById('info').value = item.info;
-        
-        // Change button text to "Update"
-        const addButton = document.getElementById('addButton');
-        addButton.textContent = 'Update Data';
-        
-        // Update the event listener for form submission
-        document.getElementById('dataForm').onsubmit = function(event) {
-            event.preventDefault();
-
-            // Update the data in store
-            dataStore[index] = {
-                id: document.getElementById('id').value,
-                mashine: document.getElementById('mashine').value,
-                standort: document.getElementById('standort').value,
-                materialien: document.getElementById('materialien').value,
-                stucke: document.getElementById('stucke').value,
-                info: document.getElementById('info').value
-            };
-
-            renderData();
-            document.getElementById('dataForm').reset();
-            addButton.textContent = 'Add Data';  // Reset button text
-        };
+    // Edit data (you would handle this similarly by sending a PUT request)
+    function editData(id) {
+        // Fill the form with existing data (you can send a PUT request to update)
+        alert('Edit functionality here!');
     }
 
     // Delete data
-    function deleteData(index) {
-        dataStore.splice(index, 1); // Remove the item from the dataStore array
-        renderData(); // Re-render the table
+    function deleteData(id) {
+        fetch(`${apiUrl}/${id}`, {
+            method: 'DELETE',
+        })
+        .then(() => fetchData()) // Refresh the data in the table
+        .catch(error => console.error('Error deleting data:', error));
     }
 
-    // Initial render
-    renderData();
+    // Initial data fetch
+    fetchData();
 </script>
 
 </body>
